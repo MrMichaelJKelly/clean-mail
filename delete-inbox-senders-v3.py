@@ -44,7 +44,7 @@ def delete_by_sender(inbox, namespace, email_addr, dry_run):
         if dry_run:
             return len(entry_ids)
 
-        # Delete by EntryID — collection is no longer involved
+        # Delete by EntryID - collection is no longer involved
         deleted = 0
         for eid in entry_ids:
             try:
