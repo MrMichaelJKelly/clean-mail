@@ -28,28 +28,21 @@ def load_senders(csv_path):
     return senders
 
 def delete_by_sender(inbox, email_addr, dry_run):
-    """Use Restrict to find all messages from one sender and delete them."""
-    # Outlook filter syntax
     filter_str = f"[SenderEmailAddress] = '{email_addr}'"
     try:
         restricted = inbox.Items.Restrict(filter_str)
-        count = len(restricted)
+        count = restricted.Count
         if count == 0:
             return 0
         if dry_run:
             return count
-        # Delete in reverse to avoid index shifting
         deleted = 0
-        # Collect EntryIDs first to avoid COM collection mutation issues
-        entry_ids = [restricted[i].EntryID for i in range(1, count + 1)]
-        namespace = inbox.Store.Session
-        for eid in entry_ids:
+        while restricted.Count > 0:
             try:
-                msg = namespace.GetItemFromID(eid)
-                msg.Delete()
+                restricted[1].Delete()
                 deleted += 1
             except Exception:
-                pass
+                break
         return deleted
     except Exception as e:
         print(f"  ERROR filtering {email_addr}: {e}")
