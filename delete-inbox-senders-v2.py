@@ -64,9 +64,9 @@ def main():
     print(f"Loaded {len(senders):,} sender addresses.")
 
     if DRY_RUN:
-        print("\n*** DRY RUN — nothing will be deleted. Use --execute to delete. ***\n")
+        print("\n** DRY RUN - nothing will be deleted.  Use --execute to delete emails. **\n")
     else:
-        print("\n*** EXECUTE MODE — messages will be moved to Deleted Items ***\n")
+        print("\n** EXECUTE MODE - messages will be moved to Deleted Items **\n")
 
     print("Connecting to Outlook...")
     outlook   = win32com.client.Dispatch("Outlook.Application")
