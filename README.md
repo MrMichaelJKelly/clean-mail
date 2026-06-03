@@ -31,10 +31,11 @@ My main concerns:
 Is there a way to easily get a list of all the FROM addresses in Inbox so I can sort through those?  I think I could pretty quickly come up with a "white list"
 of addresses I want to preserve if I had a list of all the senders.
 ```
-Claude then wrote the tool get-inbox-senders.py which produced a CSV of all my senders in Inbox, with a message count.  It took a couple of iterations to get this write so the version "get-inbox-senders-v3.py" is the best one to use.
-I opened the CSV in Excel, sorted that by message count and picked about 100 of those that are totally junk.
+Claude then wrote the tool get-inbox-senders.py which produced a CSV of all my senders in Inbox, with a message count.  It took a couple of iterations to get this right, so the version "get-inbox-senders-v3.py" is the best one to use.
 
-I created a new CSV from this with those senders and then asked Claude:
+I opened the CSV it generates in Excel, sorted that by message count descending and picked about 100 of those senders that are totally junk.
+
+I created a new CSV from this with just those senders and then asked Claude:
 
 ```
 Thank you for that helpful list.  I've reviewed it and identified the senders in this file,
@@ -46,48 +47,50 @@ Claude then replied:
 
 Good list -- 187 senders, ~29,000+ emails. Let me write the deletion script now.Here's the script. Copy it to the same folder as your `senders-to-delete.csv`, then run it in stages:
 
-**Step 1 ‚Äî Dry run first (safe, deletes nothing):**
+**Step 1 - Dry run first (safe, deletes nothing):**
 ```
-python delete_inbox_senders.py
+python delete_inbox_senders-v3.py
 ```
 This scans your inbox and shows how many messages would be deleted per sender, so you can sanity-check before anything is touched.
 
-**Step 2 ‚Äî Execute the deletions:**
+**Step 2 - Execute the deletions:**
 ```
-python delete_inbox_senders.py --execute
+python delete_inbox_senders.py-v3 --execute
 ```
 Moves all matching messages to Deleted Items (recoverable at this point).
 
-**Step 3 ‚Äî Purge to actually reclaim server space:**
+**Step 3 - Purge to actually reclaim server space:**
 ```
-python delete_inbox_senders.py --execute --purge
+python delete_inbox_senders.py-v3 --execute --purge
 ```
 Or just right-click Deleted Items in Outlook and choose "Empty Folder."
 
 A few notes:
 - **Outlook Classic (not new) must be open** before running
 - The script collects all messages to delete before deleting (safe iteration)
-- With ~29k matches it'll take several minutes ‚Äî you'll see progress every 2,000 scanned and every 500 deleted
+- With ~29k matches it'll take several minutes √¢‚Ç¨‚Äù you'll see progress every 2,000 scanned and every 500 deleted
   
 - If something looks wrong after the dry run, just don't proceed to `--execute`
 ```
 
-This got me a bunch of mails deleted but the mails themselves weren't the largest ones, so it didn't have as big
-an impact on the size of my Inbox as I hoped. So the second approach:
+This got a bunch of mails deleted but the mails themselves weren't that large, so it didn't have as big
+an impact on the overall size of my Inbox as I hoped.
+
+So I asked for a second approach:
 
 ```
 OK that worked Great - thank you.  My storage is still near the limit though so I think the next trick is to find really large items in the Inbox.  How would you modify the "find senders" script to focus on size?
 
 
-Good call ó attachments are almost certainly where the bulk of your space is.
+Good call ‚Äî attachments are almost certainly where the bulk of your space is.
 Here's a modified version that reports size.
 
 This gives you two CSVs:
 
-inbox_large_messages.csv ó top 100 individual emails by size, with subject line so you can see what they are
-inbox_senders_by_size.csv ó every sender ranked by total MB consumed, with per-message average so you can spot senders with huge attachments vs. just high volume
+inbox_large_messages.csv ‚Äî top 100 individual emails by size, with subject line so you can see what they are
+inbox_senders_by_size.csv ‚Äî every sender ranked by total MB consumed, with per-message average so you can spot senders with huge attachments vs. just high volume
 
-The average MB column is the key signal ó a sender with 50 messages averaging 5MB each is a much better deletion target than one with 3,000 messages averaging 0.02MB.
+The average MB column is the key signal ‚Äî a sender with 50 messages averaging 5MB each is a much better deletion target than one with 3,000 messages averaging 0.02MB.
 ```
 
 That is in the repo as get_senders_by_size.py. 
@@ -96,26 +99,28 @@ The next problem I noticed I told Claude about:
 
 ```
 What I've noticed is that while there are 308,558 items in the Inbox the scripts seem to be processing only part of those - and they are all pretty recent, like 2025 or 2026.  How can I make the scripts look at ALL the items including some going back 10 or more years?
-
-The issue is that Outlook Classic only **caches a subset of your mail locally** in the OST file by default ó typically the last 1ñ3 years. Older messages stay on the server and the scripts can't see them.
+```
+Claude Replied:
+```
+The issue is that Outlook Classic only **caches a subset of your mail locally** in the OST file by default ‚Äî typically the last 1‚Äì3 years. Older messages stay on the server and the scripts can't see them.
 
 **Two ways to fix this:**
 
 ---
 
-**Option 1 ó Change Outlook's sync window (simplest)**
+**Option 1 ‚Äî Change Outlook's sync window (simplest)**
 
 In Outlook Classic:
-1. File ? Account Settings ? Account Settings
+1. File / Account Settings / Account Settings
 2. Double-click your MSN/Hotmail account
-3. You'll see a **"Mail to keep offline"** slider ó change it from e.g. "3 months" or "1 year" to **"All"**
-4. Click Next/Done ó Outlook will start downloading everything from the server
+3. You'll see a **"Mail to keep offline"** slider ‚Äî change it from e.g. "3 months" or "1 year" to **"All"**
+4. Click Next/Done ‚Äî Outlook will start downloading everything from the server
 
 Downside: with 308k messages this sync could take **hours or days** depending on your connection. But once done, the scripts work as-is.
 
 ---
 
-**Option 2 ó Microsoft Graph API (accesses server directly, no waiting)**
+**Option 2 ‚Äî Microsoft Graph API (accesses server directly, no waiting)**
 
 This bypasses the local cache entirely and reads straight from the server. Requires a one-time Azure app registration (free), then we rewrite the scripts to use `requests` against the Graph API instead of `win32com`.
 
@@ -132,5 +137,4 @@ The registration takes about 10 minutes:
 Since I didn't want to start down an entirely new path (although arguably a better one), I opted for Option 2 and 
 changed Outlook to download all my mail from the Exchange server.  As Claude predicted, this took several hours so
 I went and did something else before running this again.
-
 
