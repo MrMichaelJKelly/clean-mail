@@ -14,7 +14,7 @@ Claude wrote both tools.
 Here are the prompts I used with Claude:
 
 ```
-I have over 89,000 emails in my MSN (Hotmail) Inbox.  Some of these date back 25 years.
+I have over 300,000 emails in my MSN (Hotmail) Inbox.  Some of these date back 25 years.
 I'm running out of space on the server and I can't add more since I'm at the 100 GB mailbox limit.
 I need to clean up some of these messages.  It's quite tedious.
 My main concerns:
